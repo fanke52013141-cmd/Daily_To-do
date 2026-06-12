@@ -1,0 +1,566 @@
+/* ==========================================================================
+   AI 待办 - 极简线稿风格 (Line-art Outline Style) 核心样式系统
+   ========================================================================== */
+
+:root {
+  --bg-color: #fdfdfd;       /* 全局背景色 */
+  --card-bg-color: #ffffff;  /* 分组/待办卡片底色 */
+  --font-scale: 1.0;         /* 缩放因子 */
+  
+  /* 基础大小及间距定义 */
+  --font-size-base: 14px;
+  --font-size-title: 15px;
+  --font-size-header: 16px;
+  --spacing-base: 8px;
+
+  /* 基于缩放因子的自适应计算变量 */
+  --font-size: calc(var(--font-size-base) * var(--font-scale));
+  --font-title: calc(var(--font-size-title) * var(--font-scale));
+  --font-header: calc(var(--font-size-header) * var(--font-scale));
+  --spacing: calc(var(--spacing-base) * var(--font-scale));
+  --border-width: 2px;
+}
+
+/* 页面重置：默认统一采用清晰易读的系统字体 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif;
+  user-select: none;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: #222222;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+}
+
+/* ==========================================================================
+   极简线稿风格大外框及结构
+   ========================================================================== */
+
+/* 最外层应用大容器：干净、笔直的粗线条描边与硬偏移黑色投影 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  border: 2.5px solid #222222;
+  box-shadow: 4px 4px 0px #222222;
+  background-color: transparent;
+  position: relative;
+}
+
+/* 顶部标题栏：平直实线底边，无抖动 */
+.title-bar {
+  height: 36px;
+  background-color: var(--card-bg-color);
+  border-bottom: var(--border-width) solid #222222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  -webkit-app-region: drag; /* 恢复系统原生拖动 */
+}
+
+.title-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  -webkit-app-region: no-drag; /* logo 区域禁止拖动 */
+}
+
+.logo-text {
+  font-size: var(--font-size);
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   通用线稿边框与按钮
+   ========================================================================== */
+
+.sketch-border {
+  border: var(--border-width) solid #222222;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0px #222222;
+  background: var(--card-bg-color);
+}
+
+.sketch-input {
+  border: var(--border-width) solid #222222;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: calc(var(--spacing) * 0.4) calc(var(--spacing) * 0.8);
+  font-size: var(--font-size);
+  color: #222222;
+  outline: none;
+}
+
+.sketch-input:focus {
+  border-color: #000000;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.12);
+}
+
+.action-btn {
+  background: #ffffff;
+  color: #222222;
+  font-weight: bold;
+  cursor: pointer;
+  border: var(--border-width) solid #222222;
+  border-radius: 6px;
+  padding: calc(var(--spacing) * 0.4) var(--spacing);
+  font-size: var(--font-size);
+  box-shadow: 2px 2px 0px #222222;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.action-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #222222;
+}
+
+.action-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #222222;
+}
+
+/* ==========================================================================
+   下拉设置面板 (Settings Dropdown)
+   ========================================================================= */
+.settings-dropdown {
+  background-color: var(--card-bg-color);
+  border-bottom: var(--border-width) solid #222222;
+  overflow: hidden;
+  max-height: 0; /* 默认收拢 */
+  opacity: 0;
+  padding: 0 16px;
+  transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.2s ease,
+              padding 0.25s ease;
+}
+
+.settings-dropdown.open {
+  max-height: 120px;
+  opacity: 1;
+  padding: 14px 16px;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-label {
+  font-size: var(--font-size);
+  font-weight: bold;
+}
+
+/* 极简字号滑块 */
+#fontScaleRange {
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 120px;
+}
+
+#fontScaleRange::-webkit-slider-runnable-track {
+  background: #ffffff;
+  border: 1.5px solid #222222;
+  height: 6px;
+  border-radius: 3px;
+}
+
+#fontScaleRange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  background: #222222;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  margin-top: -4px;
+  border: 1px solid #222222;
+}
+
+.scale-label {
+  font-size: var(--font-size);
+  min-width: 40px;
+}
+
+/* 色彩块选择区 */
+.preset-colors {
+  display: flex;
+  gap: 8px;
+}
+
+.color-preset {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #222222;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.color-preset:hover, .color-preset.active {
+  transform: scale(1.1);
+}
+
+.color-preset.active {
+  border-width: 3px;
+}
+
+.color-picker-wrapper {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#bgColorPicker {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   SVG 图标控制
+   ========================================================================== */
+
+.logo-svg {
+  width: 16px;
+  height: 16px;
+  color: #222222;
+}
+
+.win-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #222222;
+  padding: 0;
+}
+
+.win-btn svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+
+.win-btn:hover {
+  background-color: #eeeeee;
+  border-color: #222222;
+}
+
+.close-btn:hover {
+  background-color: #ff8a80;
+  border-color: #ff5252;
+}
+
+.control-divider {
+  width: 1px;
+  height: 10px;
+  background-color: #cccccc;
+  margin: 0 10px;
+}
+
+#collapseIcon {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.collapsed #collapseIcon {
+  transform: rotate(180deg);
+}
+
+.action-icon {
+  width: 14px;
+  height: 14px;
+  color: #555555;
+  transition: color 0.1s ease;
+}
+
+.icon-btn:hover .action-icon {
+  color: #000000;
+}
+
+.icon-btn:hover .action-icon[stroke="#ff5252"] {
+  color: #ff5252;
+}
+
+.picker-svg {
+  width: 16px;
+  height: 16px;
+  color: #222222;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  -webkit-app-region: no-drag; /* 控制按钮区禁止拖动 */
+}
+
+/* ==========================================================================
+   应用窗口折叠样式
+   ========================================================================== */
+.app-container.collapsed {
+  height: 40px !important;
+  overflow: hidden;
+  border-bottom: 2.5px solid #222222;
+}
+
+.app-container.collapsed .main-content,
+.app-container.collapsed .settings-dropdown {
+  display: none !important;
+}
+
+/* ==========================================================================
+   主列表内容区域
+   ========================================================================== */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing);
+  overflow-y: auto;
+  gap: var(--spacing);
+}
+
+.main-content::-webkit-scrollbar {
+  width: 6px;
+}
+.main-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.main-content::-webkit-scrollbar-thumb {
+  background: #bbbbbb;
+  border-radius: 3px;
+}
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: #222222;
+}
+
+.groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+}
+
+/* ==========================================================================
+   待办分组卡片 (Group Card)
+   ========================================================================== */
+.group-card {
+  border: var(--border-width) dashed #222222;
+  border-radius: 8px; /* 统一、规则的极简圆角，不再有花里胡哨的手写扭曲 */
+  box-shadow: none;
+  background-color: var(--card-bg-color);
+  padding: calc(var(--spacing) * 1.0);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 0.75);
+  transition: background-color 0.2s ease;
+}
+
+/* 分组标题头部栏 */
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #dddddd;
+  padding-bottom: calc(var(--spacing) * 0.5);
+}
+
+.group-title-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.group-title-text {
+  font-size: var(--font-title);
+  font-weight: bold;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.group-title-text:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.group-title-input {
+  width: 80%;
+  font-size: var(--font-title);
+  font-weight: bold;
+}
+
+/* 分组操作动作栏（包含新建待办+与删除分组x） */
+.group-actions {
+  display: flex;
+  align-items: center;
+  /* 两个按钮之间保留 12px 的安全间距，彻底防止误触 */
+  gap: 12px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border-radius: 4px;
+  color: #555555;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #000000;
+}
+
+/* ==========================================================================
+   待办列表及项 (Todo Items)
+   ========================================================================== */
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 0.3);
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--spacing) * 0.3) 0;
+  border: none;
+  border-bottom: 1px dashed #dddddd;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.todo-item:last-child {
+  border-bottom: none;
+}
+
+.todo-item-left {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 0.6);
+  flex: 1;
+}
+
+/* 极简直角复选框，去除手写滤镜 */
+.sketch-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sketch-checkbox-wrapper input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.sketch-checkbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 16px;
+  width: 16px;
+  background-color: #ffffff;
+  border: 1.5px solid #222222;
+  border-radius: 3px;
+}
+
+/* 直线条勾选效果 */
+.sketch-checkbox-wrapper input:checked ~ .sketch-checkbox::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid #222222;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.todo-text {
+  font-size: var(--font-size);
+  line-height: 1.3;
+  color: #222222;
+  cursor: pointer;
+  word-break: break-all;
+  flex: 1;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* 划消红线：原生删除线，多行文字可完美穿过每一行字身 */
+.todo-item.completed .todo-text {
+  color: #888888;
+  text-decoration: line-through;
+  text-decoration-color: #ff5252;
+  text-decoration-thickness: 1.5px;
+}
+
+.todo-item-input {
+  width: 90%;
+  font-size: var(--font-size);
+}
+
+/* ==========================================================================
+   背景色彩对比与反差
+   ========================================================================== */
+body.has-custom-bg {
+  --card-bg-color: #ffffff; /* 自定义背景下卡片统一强制使用纯白 */
+}
+
+body.has-custom-bg .todo-item,
+body.has-custom-bg .settings-dropdown,
+body.has-custom-bg .title-bar {
+  background-color: #ffffff;
+  box-shadow: 4px 4px 0px #222222;
+}
+
+body.has-custom-bg .group-card {
+  background-color: #ffffff;
+  box-shadow: none;
+}
+
+body.has-custom-bg .todo-item {
+  box-shadow: none; /* 在卡片内不加重叠投影，保持极致清爽 */
+}

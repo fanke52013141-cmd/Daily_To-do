@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>待办</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 手绘线稿应用的整体外边框容器，仅在其外侧应用线稿抖动滤镜 -->
+  <div class="app-container" id="appContainer">
+    
+    <!-- 自定义顶部标题栏（包含手绘下分割线） -->
+    <header class="title-bar" id="titleBar">
+      <div class="title-logo">
+        <span class="logo-text">待办</span>
+      </div>
+      
+      <!-- 统一的线稿 SVG 窗口操作及新建/设置控制区 -->
+      <div class="window-controls">
+        <button class="win-btn" id="createGroupBtn" title="新建分组">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        
+        <button class="win-btn" id="settingsToggleBtn" title="设置字号与背景">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+
+        <button class="win-btn" id="collapseBtn" title="折叠/展开所有待办">
+          <svg id="collapseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"/>
+          </svg>
+        </button>
+        
+        <div class="control-divider"></div>
+
+        <button class="win-btn minimize-btn" id="minimizeBtn" title="最小化">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        
+
+        
+        <button class="win-btn close-btn" id="closeBtn" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 可收起的顶部设置菜单（默认折叠） -->
+    <section class="settings-dropdown" id="settingsDropdown">
+      <div class="settings-content">
+        <div class="control-group font-control">
+          <span class="control-label">字号间距：</span>
+          <input type="range" id="fontScaleRange" min="0.75" max="1.5" step="0.05" value="1.0">
+          <span id="fontScaleValue" class="scale-label">100%</span>
+        </div>
+
+        <div class="control-group color-control">
+          <span class="control-label">背景色彩：</span>
+          <div class="preset-colors">
+            <button class="color-preset active" data-color="#fdfdfd" style="background-color: #fdfdfd;" title="素白"></button>
+            <button class="color-preset" data-color="#fcf8e3" style="background-color: #fcf8e3;" title="宣纸"></button>
+            <button class="color-preset" data-color="#e1f5fe" style="background-color: #e1f5fe;" title="晴空"></button>
+            <button class="color-preset" data-color="#e8f5e9" style="background-color: #e8f5e9;" title="浅草"></button>
+            <button class="color-preset" data-color="#fff3e0" style="background-color: #fff3e0;" title="暖橙"></button>
+          </div>
+          <div class="color-picker-wrapper" title="采集/自定义颜色">
+            <input type="color" id="bgColorPicker" value="#fdfdfd">
+            <!-- 手绘风格色盘线稿图标 -->
+            <svg class="picker-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.3442 19.4856 5.3442 20.2729 4.85857 20.7586C4.62241 20.9947 4.30209 21.1273 3.96783 21.1273C3.30058 21.1273 2.75971 20.5864 2.75971 19.9192C2.75971 19.5849 2.89228 19.2646 3.12844 19.0284C3.12844 19.0284 3.12844 19.0284 3.12845 19.0284C1.78204 17.166 1 14.8698 1 12.3846C1 6.10862 6.10862 1 12.3846 1C18.6606 1 23.7692 6.10862 23.7692 12.3846C23.7692 18.6606 18.6606 23.7692 12.3846 23.7692C11.5471 23.7692 10.8654 23.0875 10.8654 22.25C10.8654 21.4125 11.5471 20.7308 12.3846 20.7308C12.7188 20.7308 13.0391 20.8633 13.2753 21.0995L13.2753 21.0995C13.7609 21.5851 14.5482 21.5851 15.0338 21.0995C15.0338 21.0995 15.0338 21.0995 15.0338 21.0995C16.8021 19.2957 17.8924 16.825 17.8924 14.0995C17.8924 8.57668 13.4112 4.09548 7.88837 4.09548C5.16283 4.09548 2.69213 5.1858 0.888375 6.95405"/>
+              <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor"/>
+              <circle cx="11.5" cy="7.5" r="1.5" fill="currentColor"/>
+              <circle cx="16.5" cy="9.5" r="1.5" fill="currentColor"/>
+              <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 应用主体区域（折叠时隐藏） -->
+    <main class="main-content" id="mainContent">
+      <!-- 待办分组列表展示区 -->
+      <section class="groups-container" id="groupsContainer">
+        <!-- 分组卡片将由 JS 渲染 -->
+      </section>
+    </main>
+  </div>
+
+
+
+  <script src="renderer.js"></script>
+</body>
+</html>
