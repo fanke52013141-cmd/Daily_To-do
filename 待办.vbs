@@ -7,5 +7,5 @@ currentDir = fso.GetParentFolderName(WScript.ScriptFullName)
 
 ' 拼接命令，先 cd 进入项目文件夹，再执行 npm start
 ' 这里的 0 代表隐藏命令窗口，不会出现命令行黑框
-cmd = "cmd.exe /c cd /d """ & currentDir & """ && npm start"
+cmd = "cmd.exe /c taskkill /F /IM electron.exe >nul 2>&1 & cd /d """ & currentDir & """ && npm start"
 shell.Run cmd, 0, false

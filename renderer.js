@@ -20,7 +20,9 @@ const DEFAULT_STATE = {
     fontScale: 1.0,
     bgColor: '#fdfdfd',
     isCollapsed: false,
-    isSettingsOpen: false
+    isSettingsOpen: false,
+    userHasResized: false,
+    normalHeight: 650
   }
 };
 
@@ -97,6 +99,10 @@ function initWindowControls() {
   const collapseBtn = document.getElementById('collapseBtn');
   const createGroupBtn = document.getElementById('createGroupBtn');
   const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+  const alwaysOnTopBtn = document.getElementById('alwaysOnTopBtn');
+  const enterBallBtn = document.getElementById('enterBallBtn');
+  const todoBall = document.getElementById('todoBall');
+  const logoText = document.getElementById('logoText');
 
   const isElectron = window.windowAPI !== undefined;
 
@@ -108,7 +114,84 @@ function initWindowControls() {
     saveData();
   });
 
+  alwaysOnTopBtn.addEventListener('click', () => {
+    appState.config.isAlwaysOnTop = !appState.config.isAlwaysOnTop;
+    updateAlwaysOnTopUI();
+    if (isElectron) {
+      window.windowAPI.setAlwaysOnTop(appState.config.isAlwaysOnTop);
+    }
+    saveData();
+  });
 
+  const triggerEnterBall = () => {
+    appState.config.isBallMode = true;
+    appState.config.isCollapsed = true; // 悬浮球模式默认也是折叠底座状态
+    updateCollapseUI();
+    if (isElectron) {
+      window.windowAPI.enterBallMode();
+    }
+    saveData();
+  };
+
+  enterBallBtn.addEventListener('click', triggerEnterBall);
+  logoText.addEventListener('click', triggerEnterBall);
+
+  // 绑定悬浮球鼠标绝对拖拽定位与单击恢复折叠交互
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let mouseOffsetX = 0;
+  let mouseOffsetY = 0;
+  let isMouseDownOnBall = false;
+  let hasMoved = false;
+
+  todoBall.addEventListener('mousedown', (e) => {
+    e.preventDefault(); // 阻止文本拖拽阴影冲突
+    dragStartX = e.screenX;
+    dragStartY = e.screenY;
+    mouseOffsetX = e.clientX;
+    mouseOffsetY = e.clientY;
+    isMouseDownOnBall = true;
+    hasMoved = false;
+    if (isElectron) {
+      window.windowAPI.dragStart();
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isMouseDownOnBall) {
+      const diffX = Math.abs(e.screenX - dragStartX);
+      const diffY = Math.abs(e.screenY - dragStartY);
+      if (diffX > 2 || diffY > 2) {
+        hasMoved = true;
+        const targetX = e.screenX - mouseOffsetX;
+        const targetY = e.screenY - mouseOffsetY;
+        if (isElectron) {
+          window.windowAPI.moveWindow(targetX, targetY);
+        }
+      }
+    }
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (isMouseDownOnBall) {
+      if (isElectron) {
+        window.windowAPI.dragEnd();
+      }
+      const diffX = Math.abs(e.screenX - dragStartX);
+      const diffY = Math.abs(e.screenY - dragStartY);
+      // 点击事件：退出待办球，重置回折叠状态
+      if (!hasMoved && diffX < 5 && diffY < 5) {
+        appState.config.isBallMode = false;
+        appState.config.isCollapsed = true;
+        updateCollapseUI();
+        if (isElectron) {
+          window.windowAPI.exitBallMode(appState.config.isAlwaysOnTop);
+        }
+        saveData();
+      }
+    }
+    isMouseDownOnBall = false;
+  });
 
   if (isElectron) {
     minimizeBtn.addEventListener('click', () => window.windowAPI.minimize());
@@ -135,11 +218,34 @@ function initWindowControls() {
 function updateCollapseUI() {
   const appContainer = document.getElementById('appContainer');
   const isCollapsed = appState.config.isCollapsed;
+  const isBallMode = appState.config.isBallMode;
 
-  if (isCollapsed) {
+  if (isBallMode) {
+    appContainer.classList.add('ball-mode');
     appContainer.classList.add('collapsed');
   } else {
-    appContainer.classList.remove('collapsed');
+    appContainer.classList.remove('ball-mode');
+    if (isCollapsed) {
+      appContainer.classList.add('collapsed');
+    } else {
+      appContainer.classList.remove('collapsed');
+    }
+  }
+
+  if (!isCollapsed && !isBallMode) {
+    setTimeout(adjustWindowHeight, 50);
+  }
+}
+
+function updateAlwaysOnTopUI() {
+  const alwaysOnTopBtn = document.getElementById('alwaysOnTopBtn');
+  const isAlwaysOnTop = appState.config.isAlwaysOnTop;
+  if (alwaysOnTopBtn) {
+    if (isAlwaysOnTop) {
+      alwaysOnTopBtn.classList.add('active');
+    } else {
+      alwaysOnTopBtn.classList.remove('active');
+    }
   }
 }
 
@@ -157,6 +263,7 @@ function updateSettingsUI() {
     settingsToggleBtn.style.backgroundColor = 'transparent';
     settingsToggleBtn.style.borderColor = 'transparent';
   }
+  adjustWindowHeight();
 }
 
 // ==========================================================================
@@ -181,6 +288,7 @@ function initConfigControls() {
     appState.config.fontScale = scale;
     applyFontScale(scale);
     saveData();
+    adjustWindowHeight();
   });
 
   const applyBgColor = (color) => {
@@ -496,6 +604,65 @@ function render() {
     groupCard.appendChild(todoList);
     container.appendChild(groupCard);
   });
+  updateBallCount();
+  adjustWindowHeight();
+}
+
+function updateBallCount() {
+  const ballCountSpan = document.getElementById('ballCount');
+  if (!ballCountSpan) return;
+  let count = 0;
+  appState.groups.forEach(g => {
+    g.todos.forEach(t => {
+      if (!t.completed) count++;
+    });
+  });
+  ballCountSpan.textContent = count;
+  if (count === 0) {
+    ballCountSpan.classList.add('empty');
+  } else {
+    ballCountSpan.classList.remove('empty');
+  }
+}
+
+function adjustWindowHeight() {
+  const isElectron = window.windowAPI !== undefined;
+  if (!isElectron) return;
+
+  // 仅在非折叠、非悬浮球模式下调整高度
+  if (appState.config.isCollapsed || appState.config.isBallMode) return;
+
+  if (appState.config.userHasResized) {
+    window.windowAPI.setHeight(appState.config.normalHeight);
+    return;
+  }
+
+  const titleBar = document.getElementById('titleBar');
+  const settingsDropdown = document.getElementById('settingsDropdown');
+  const mainContent = document.getElementById('mainContent');
+  const groupsContainer = document.getElementById('groupsContainer');
+
+  if (!titleBar || !settingsDropdown || !mainContent || !groupsContainer) return;
+
+  const titleBarHeight = titleBar.offsetHeight;
+  const settingsHeight = settingsDropdown.classList.contains('open') ? settingsDropdown.scrollHeight : 0;
+  
+  const computedStyle = window.getComputedStyle(mainContent);
+  const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+  const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0;
+  
+  const groupsHeight = groupsContainer.scrollHeight;
+
+  // 加上 6 像素（边框及微调）
+  let calculatedHeight = titleBarHeight + settingsHeight + groupsHeight + paddingTop + paddingBottom + 6;
+
+  const maxHeight = Math.round(520 * (appState.config.fontScale || 1.0));
+
+  if (calculatedHeight > maxHeight) {
+    calculatedHeight = maxHeight;
+  }
+
+  window.windowAPI.setHeight(calculatedHeight);
 }
 
 // ==========================================================================
@@ -508,12 +675,28 @@ window.addEventListener('DOMContentLoaded', () => {
   
   // 应用上次的收缩状态
   updateCollapseUI();
+  updateAlwaysOnTopUI();
   updateSettingsUI();
 
-  if (appState.config.isCollapsed && window.windowAPI) {
-    setTimeout(() => {
-      window.windowAPI.collapse(true);
-    }, 100);
+  // 同步初始化置顶状态与待办球/折叠状态
+  if (window.windowAPI) {
+    window.windowAPI.setAlwaysOnTop(appState.config.isAlwaysOnTop);
+    
+    window.windowAPI.onUserResized((height) => {
+      appState.config.userHasResized = true;
+      appState.config.normalHeight = height;
+      saveData();
+    });
+    
+    if (appState.config.isBallMode) {
+      setTimeout(() => {
+        window.windowAPI.enterBallMode();
+      }, 100);
+    } else if (appState.config.isCollapsed) {
+      setTimeout(() => {
+        window.windowAPI.collapse(true);
+      }, 100);
+    }
   }
 
   // 首次渲染

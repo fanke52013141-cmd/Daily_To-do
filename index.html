@@ -11,10 +11,23 @@
   <!-- 手绘线稿应用的整体外边框容器，仅在其外侧应用线稿抖动滤镜 -->
   <div class="app-container" id="appContainer">
     
+    <!-- 悬浮待办球节点 -->
+    <div class="todo-ball" id="todoBall" title="按住拖动，点击恢复折叠">
+      <!-- 极美手绘便签打勾图标 -->
+      <svg class="ball-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 3h10l4 4v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+        <path d="M15 3v4h4" />
+        <line x1="8" y1="10" x2="13" y2="10" />
+        <line x1="8" y1="14" x2="12" y2="14" />
+        <path d="M7 13l3 3 8-9" stroke="#ff5252" stroke-width="2.5" />
+      </svg>
+      <span class="ball-count" id="ballCount">0</span>
+    </div>
+    
     <!-- 自定义顶部标题栏（包含手绘下分割线） -->
     <header class="title-bar" id="titleBar">
       <div class="title-logo">
-        <span class="logo-text">待办</span>
+        <span class="logo-text" id="logoText">待办</span>
       </div>
       
       <!-- 统一的线稿 SVG 窗口操作及新建/设置控制区 -->
@@ -36,6 +49,20 @@
         <button class="win-btn" id="collapseBtn" title="折叠/展开所有待办">
           <svg id="collapseIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="18 15 12 9 6 15"/>
+          </svg>
+        </button>
+
+        <button class="win-btn" id="alwaysOnTopBtn" title="窗口置顶">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="17" x2="12" y2="22"/>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.47A2 2 0 0 1 15 9.29V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.29a2 2 0 0 1-.78 1.24L5.44 14a2 2 0 0 0-.44 1.24z"/>
+          </svg>
+        </button>
+
+        <button class="win-btn" id="enterBallBtn" title="变换为悬浮球">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
         </button>
         

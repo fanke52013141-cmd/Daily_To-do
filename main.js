@@ -5,6 +5,7 @@ let mainWindow;
 // 默认窗口大小
 let normalSize = { width: 366, height: 650 };
 let isCollapsed = false;
+let isProgrammaticResize = false;
 
 // 请求单实例锁，防止多实例运行以及后台残留僵尸进程导致的版本无法更新
 const gotTheLock = app.requestSingleInstanceLock();
@@ -29,8 +30,8 @@ if (!gotTheLock) {
       frame: false, // 隐藏边框
       resizable: true,
       maximizable: false, // 禁用最大化，防止双击全屏
+      transparent: true, // 启用窗口透明
       show: false, // 避免加载时闪烁
-      backgroundColor: '#ffffff',
       icon: path.join(__dirname, 'assets/icon.png'), // 加载手稿风格图标
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
@@ -54,6 +55,9 @@ if (!gotTheLock) {
         const size = mainWindow.getSize();
         if (size[0] >= 280) {
           normalSize = { width: size[0], height: size[1] };
+          if (!isProgrammaticResize) {
+            mainWindow.webContents.send('user-resized', size[1]);
+          }
         }
       }
     });
@@ -110,14 +114,73 @@ ipcMain.on('window-collapse', (event, collapseState) => {
     mainWindow.setMinimumSize(normalSize.width, 40);
     mainWindow.setMaximumSize(normalSize.width, 40);
     mainWindow.setSize(normalSize.width, 40);
-    // 自动置顶，便于桌面悬挂
-    mainWindow.setAlwaysOnTop(true);
   } else {
     // 展开模式：解除限制，还原大小，取消置顶
     mainWindow.setMinimumSize(280, 100);
     mainWindow.setMaximumSize(9999, 9999);
     mainWindow.setResizable(true);
     mainWindow.setSize(normalSize.width, normalSize.height);
-    mainWindow.setAlwaysOnTop(false);
+  }
+});
+
+ipcMain.on('window-always-on-top', (event, alwaysOnTop) => {
+  if (mainWindow) {
+    mainWindow.setAlwaysOnTop(alwaysOnTop);
+  }
+});
+
+ipcMain.on('window-enter-ball-mode', () => {
+  if (mainWindow) {
+    const bounds = mainWindow.getBounds();
+    const rightX = bounds.x + bounds.width;
+
+    mainWindow.setResizable(false);
+    mainWindow.setMinimumSize(60, 60);
+    mainWindow.setMaximumSize(60, 60);
+    mainWindow.setBounds({ x: rightX - 60, y: bounds.y, width: 60, height: 60 });
+    mainWindow.setAlwaysOnTop(true); // 悬浮球必须置顶
+  }
+});
+
+ipcMain.on('window-exit-ball-mode', (event, alwaysOnTop) => {
+  if (mainWindow) {
+    const bounds = mainWindow.getBounds();
+    const rightX = bounds.x + bounds.width;
+
+    mainWindow.setMinimumSize(normalSize.width, 40);
+    mainWindow.setMaximumSize(normalSize.width, 40);
+    mainWindow.setBounds({ x: rightX - normalSize.width, y: bounds.y, width: normalSize.width, height: 40 });
+    mainWindow.setAlwaysOnTop(alwaysOnTop); // 还原用户设定的置顶状态
+  }
+});
+
+ipcMain.on('window-move', (event, { targetX, targetY }) => {
+  if (mainWindow) {
+    mainWindow.setPosition(targetX, targetY);
+  }
+});
+
+ipcMain.on('window-drag-start', () => {
+  if (mainWindow) {
+    mainWindow.setResizable(false);
+  }
+});
+
+ipcMain.on('window-drag-end', () => {
+  if (mainWindow) {
+    if (!isCollapsed) {
+      mainWindow.setResizable(true);
+    }
+  }
+});
+
+ipcMain.on('window-set-height', (event, height) => {
+  if (mainWindow && !isCollapsed) {
+    isProgrammaticResize = true;
+    const size = mainWindow.getSize();
+    mainWindow.setSize(size[0], height);
+    setTimeout(() => {
+      isProgrammaticResize = false;
+    }, 100);
   }
 });
